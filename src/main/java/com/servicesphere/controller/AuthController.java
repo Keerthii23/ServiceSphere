@@ -1,8 +1,12 @@
 
 package com.servicesphere.controller;
 
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -60,7 +64,6 @@ public class AuthController {
 
         try {
             LoginResponse response = userService.loginUser(request);
-
             return ResponseEntity.ok(response);
 
         } catch (IllegalArgumentException exception) {
@@ -68,5 +71,17 @@ public class AuthController {
                     .status(HttpStatus.UNAUTHORIZED)
                     .body(exception.getMessage());
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "email", authentication.getName(),
+                        "authenticated", true
+                )
+        );
     }
 }
