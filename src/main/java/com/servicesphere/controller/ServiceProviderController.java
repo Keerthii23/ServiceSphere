@@ -34,13 +34,16 @@ public class ServiceProviderController {
             ServiceProviderService providerService,
             ServiceProviderMapper providerMapper,
             UserRepository userRepository) {
+
         this.providerService = providerService;
         this.providerMapper = providerMapper;
         this.userRepository = userRepository;
     }
 
+    // Get all verified service providers
     @GetMapping
     public ResponseEntity<List<ServiceProviderResponse>> getVerifiedProviders() {
+
         List<ServiceProviderResponse> providers = providerService
                 .getVerifiedProviders()
                 .stream()
@@ -50,8 +53,10 @@ public class ServiceProviderController {
         return ResponseEntity.ok(providers);
     }
 
+    // Get all available service providers
     @GetMapping("/available")
     public ResponseEntity<List<ServiceProviderResponse>> getAvailableProviders() {
+
         List<ServiceProviderResponse> providers = providerService
                 .getAvailableProviders()
                 .stream()
@@ -61,16 +66,48 @@ public class ServiceProviderController {
         return ResponseEntity.ok(providers);
     }
 
+    // Get the logged-in provider's own profile
+    @GetMapping("/me")
+    public ResponseEntity<ServiceProviderResponse> getMyProviderProfile() {
+
+        String email = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "User not found."));
+
+        if (!"PROVIDER".equals(user.getRole())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Only service providers can access provider profiles.");
+        }
+
+        ServiceProvider provider =
+                providerService.getProviderByUserId(user.getId());
+
+        ServiceProviderResponse response =
+                providerMapper.toResponse(provider);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // Get a service provider by ID
     @GetMapping("/{id}")
     public ResponseEntity<ServiceProviderResponse> getProviderById(
             @PathVariable Long id) {
 
         ServiceProvider provider = providerService.getProviderById(id);
-        ServiceProviderResponse response = providerMapper.toResponse(provider);
+
+        ServiceProviderResponse response =
+                providerMapper.toResponse(provider);
 
         return ResponseEntity.ok(response);
     }
 
+    // Create a provider profile
     @PostMapping("/profile")
     public ResponseEntity<ServiceProviderResponse> createProviderProfile(
             @RequestBody ServiceProviderRequest request) {
@@ -81,7 +118,8 @@ public class ServiceProviderController {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "User not found."));
+                        HttpStatus.NOT_FOUND,
+                        "User not found."));
 
         if (!"PROVIDER".equals(user.getRole())) {
             throw new ResponseStatusException(
@@ -95,6 +133,7 @@ public class ServiceProviderController {
         ServiceProviderResponse response =
                 providerMapper.toResponse(provider);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(response);
     }
 }
